@@ -8,7 +8,7 @@ golang 폴더에선 기본적으로 하나의 main 함수만 취급한다.
 func main() { } 부터 읽어 들이기 시작한다.
 
 main.go 파일에서
-```
+```go
 package main
 
 import (
@@ -35,7 +35,7 @@ gos 파일 안에 있는 NewDBProc 함수를 통해 초기화를 해준다.
 ### 2. dbproc.go
 main.go 함수에서 호술하는 파일이다.
 
-```
+```go
 package gos
 
 import (
