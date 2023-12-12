@@ -1,0 +1,35 @@
+<!--Fetch를 이용한 비동기 통신 , Fetch 구현-->
+<h1>Contact</h1>
+<form method="POST">
+	<label>Email:</label><br />
+  <input type="text" name="email"><br />
+  <label>Subject:</label><br />
+  <input type="text" name="subject"><br />
+  <label>Message:</label><br />
+  <textarea name="message"></textarea><br /><hr />
+  <input type="submit">
+</form>
+
+<script>
+  const formEl = document.querySelector('form')
+
+  formEl.addEventListener('submit', async evt => {
+    evt.preventDefault()
+    const formData = new FormData(evt.target)
+    const obj = {}
+    
+    for (const [key, value] of formData) obj[key] = value // formData -> JS object
+
+    const result = await fetch('/', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(obj), // JS Object -> JSON String
+    })
+
+    const responseData = await result.json() // Response Object -> JS object
+
+    alert(JSON.stringify(responseData))
+  })
+</script>

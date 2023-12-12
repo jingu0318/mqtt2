@@ -1,0 +1,7 @@
+{
+	"BrokerIP": "127.0.0.1",
+	"BrokerPort": 1883,
+	"Topic" : "apples/rpi40/serial",
+    "ClientID": "go_mqtt_client",
+	"SiteID": 111
+}
