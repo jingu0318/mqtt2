@@ -115,3 +115,29 @@ gos 폴더 안에 있는 파일이라 package 는 gos로 되어 있고
 
 DB 정보를 불러와 저장하는 DBInfo 구조체, DB정보가 담긴 구조체와 연결부분을 저장하는 DBProc 구조체 두개가 있다.
 
+다음으로는 앞서 말한거 처럼 NewDBProc()함수가 있는데 이 함수는 DBProc 값을 대입받는 함수이다.
+
+readConf() 함수는 함수 앞 dp *DBProc 를 지정하여 DBProc 를 위한 메소드 임을 표시한다.
+```go
+file, _ := os.Open("./dbinfo.json")
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	err := decoder.Decode(&dp.DBInfo) 
+```
+os.Open 을 통해 dbinfo 파일을 열어 읽어온다. 다음 json.NewDecoder 함수로 디코더를 만든 후 json.Decode를 통해 JSON 문자열을 GO 밸류로 변경하게 된다. (JSON 문자열을 GO 밸류로 바꾸는 이작업을 디코딩이라 한다.)
+
+그 다음 dp 라는 이름의 객체에 DBInfo 안 필드에 데이터가 잘 들어 갔는지 출력을 통해 확인한다.
+
+함수 GetConnector(dp DBProc) *sql.DB 은 연결 부분이다. 파라미터로 DBProc 구조체가 들어간다는 말이고 리턴 값이 sql.DB 임을 뜻한다.
+
+cfg  안 내용은 연결 부분이다. 필요한 구조체 내용으로 대체하면 된다.
+```go
+connector, err := mysql.NewConnector(&cfg)
+	if err != nil {
+		panic(err)
+	}
+	db := sql.OpenDB(connector)
+	return db
+```
+mysql.NewConnector 를 통해 connector를 생성하고 OpenDB에 인자로 넣어주면 된다.
+위 값이 리턴 값이 되고 리턴 값은 같은 형태인 DBProc 필드 DBConn으로 들어가며 연결이 된다.
