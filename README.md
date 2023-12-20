@@ -23,17 +23,17 @@ func main() {
 ```
 gos 라는 폴더를 사용하기위해 import 해준다.("sensor_server"는 go.mod 파일 생성시 module을 sensor_server로 작성해서 그러하다.)
 
-main 함수를 보면 dp 라는 생성자를 통해 새로운 구조체를 선언하고 형식은 dbproc.go 파일에 있는 DBProc 구조체 형식이다.
+main 함수를 보면 dp 라는 객체를 선언하고 형식은 dbproc.go 파일에 있는 DBProc 구조체 형식이다.
 
-gos 파일 안에 있는 NewDBProc 함수를 통해 초기화를 해준다. 
+gos 파일 안에 있는 NewDBProc 함수(생성자함수)를 통해 초기화를 해준다. 
 
 (초기화 내용에는 DB 정보를 읽는 readConf() 함수와 연결하는 부분인 GetConnector() 함수가 있다.)
 
 
-다음으로는 gos 폴더 안에 있는 client.go 파일에 NewMqttClient() 함수를 실행하여 초기화하는데 초기화 안에는 생성자 와 readConf(), init(), sub() 함수로 이뤄져 있다.
+다음으로는 gos 폴더 안에 있는 client.go 파일에 NewMqttClient()함수(생성자함수)를 실행하여 초기화하는데 초기화 안에는 생성자 와 readConf(), init(), sub() 함수로 이뤄져 있다.
 
 ### 2. dbproc.go
-main.go 함수에서 호술하는 파일이다.
+main.go 함수에서 호출한 함수가 있는 파일이다.
 
 ```go
 package gos
@@ -115,7 +115,7 @@ gos 폴더 안에 있는 파일이라 package 는 gos로 되어 있고
 
 DB 정보를 불러와 저장하는 DBInfo 구조체, DB정보가 담긴 구조체와 연결부분을 저장하는 DBProc 구조체 두개가 있다.
 
-다음으로는 앞서 말한거 처럼 NewDBProc()함수가 있는데 이 함수는 DBProc 값을 대입받는 함수이다.
+다음으로는 앞서 말한거 처럼 생성자함수 NewDBProc()함수가 있는데 이 함수는 DBProc 값을 대입받는 함수이다.
 
 readConf() 함수는 함수 앞 dp *DBProc 를 지정하여 DBProc 를 위한 메소드 임을 표시한다.
 ```go
@@ -143,4 +143,134 @@ mysql.NewConnector 를 통해 connector를 생성하고 OpenDB에 인자로 넣�
 위 값이 리턴 값이 되고 리턴 값은 같은 형태인 DBProc 필드 DBConn으로 들어가며 연결이 된다.
 
 ### 3. client.go
-리드미 작성
+main 함수에서 dp를 생성하고 초기화를 한 다음 gos 폴더 안에 있는 생성자함수 NewMqttClinet()를 호출하고 값을 넣었다.
+
+clinet.go 파일을 보자
+```go
+package gos
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+)
+
+type MqttInfo struct {
+	BrokerIP   string
+	BrokerPort int
+	Topic      string
+	ClientID   string
+	SiteID     int
+}
+
+type MqttClient struct {
+	MqtInfo         MqttInfo
+	MsgHandler      mqtt.MessageHandler
+	ProcConnect     mqtt.OnConnectHandler
+	ProcLostConnect mqtt.ConnectionLostHandler
+	MqttClient      mqtt.Client
+	isConnected     bool
+}
+
+func NewMqttClient(dp DBProc) {
+	mq := MqttClient{}
+	mq.isConnected = false
+
+	mq.readConf()
+	mq.init()
+
+	mq.MsgHandler = func(client mqtt.Client, msg mqtt.Message) {
+		str := string(msg.Payload())
+		name := str[0:5]
+		value := str[6:]
+		fmt.Print(name + ":" + value)
+		_, err := dp.DBConn.Exec("INSERT INTO sensorlogs(name, temp) value(?,?)", name, value)
+		if err == nil {
+		} else {
+			log.Println(err)
+			print("에러1")
+		}
+	}
+	mq.ProcConnect = func(client mqtt.Client) {
+		fmt.Println("Connected")
+	}
+	mq.ProcLostConnect = func(client mqtt.Client, err error) {
+		fmt.Printf("Connect lost: %v", err)
+	}
+	mq.sub()
+}
+
+func (mq *MqttClient) readConf() { //json 파일 읽기
+	file, _ := os.Open("./mqtt.json")
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	err := decoder.Decode(&mq.MqtInfo) //DB쪽이라 생각하면 될듯
+
+	if err != nil {
+		fmt.Println("err: ", err)
+	}
+
+	fmt.Println("BrokerIP : ", mq.MqtInfo.BrokerIP)
+	fmt.Println("BrokerPort : ", mq.MqtInfo.BrokerPort)
+	fmt.Println("Topic : ", mq.MqtInfo.Topic)
+	fmt.Println("ClientID : ", mq.MqtInfo.ClientID)
+	fmt.Println("SiteID : ", mq.MqtInfo.SiteID)
+}
+
+func (mq *MqttClient) init() {
+
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", mq.MqtInfo.BrokerIP, mq.MqtInfo.BrokerPort)) //로컬브로커
+	opts.SetClientID(mq.MqtInfo.ClientID)
+
+	opts.SetKeepAlive(60 * time.Second)
+	// Set the message callback handler
+	opts.SetPingTimeout(1 * time.Second)
+	opts.SetUsername("emqx")
+	opts.SetPassword("public")
+	opts.SetDefaultPublishHandler(mq.MsgHandler)
+	opts.OnConnect = mq.ProcConnect
+	opts.OnConnectionLost = mq.ProcLostConnect
+
+	mq.MqttClient = mqtt.NewClient(opts) //여기서부터 시작 고치기 완료
+	if token := mq.MqttClient.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	} else {
+		mq.isConnected = true
+	}
+}
+
+func (mq *MqttClient) sub() { //topic 방 만들기
+	token := mq.MqttClient.Subscribe(mq.MqtInfo.Topic, 1, nil) //func (mqtt.Client).Subscribe(topic string, qos byte, callback mqtt.MessageHandler)
+	token.Wait()
+	fmt.Printf("Subscribed to topic: %s\n", mq.MqtInfo.Topic)
+	for i := 1; true; i++ {
+		time.Sleep(60 * time.Second)
+	}
+}
+```
+이 파일은 두개의 구조체가 있다.브로커IP와 port, topic 같은 정보를 저장하는 MqttInfo 구조체와
+
+클라인언트 정보와 서버연결 정보를 저장하는 MqttClient 구조체가 있다.
+
+바로 밑에는 main 함수에서 실행한 생성자함수(NewMqttClient)를 볼 수 있다.
+```go
+mq := MqttClient{}
+	mq.isConnected = false
+
+	mq.readConf()
+	mq.init()
+```
+MqttClient 객체(mq)를 만들고 필드값(isConnected)을 설정(false)
+
+MqttClient를 위한 메소드 함수 readConf(),init() 또한 실행시킨다. 
+
+readConf()함수는 dbporc에서도 나왔다 시피 mqtt.json 파일을 읽고 저장한다.
+
+init() 함수는 mqtt 브로커 초기설정을 위한 함수이다.(어쩌면 생성자함수와 같은 결일 수 있다.)
+
+import 되어있는 mqtt "github.com/eclipse/paho.mqtt.golang" 패키지를 사용하여 클라이언트 옵션설정을 한다.
