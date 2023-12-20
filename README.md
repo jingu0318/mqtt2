@@ -143,3 +143,4 @@ mysql.NewConnector 를 통해 connector를 생성하고 OpenDB에 인자로 넣�
 위 값이 리턴 값이 되고 리턴 값은 같은 형태인 DBProc 필드 DBConn으로 들어가며 연결이 된다.
 
 ### 3. client.go
+리드미 작성
