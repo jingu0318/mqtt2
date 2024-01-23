@@ -2,6 +2,17 @@
 
 ### golnag 에서 mqtt borker를 사용하여 정보를 전달하는 방법
 ---
+### 0. mqtt관련 라이브러리 설치
+golang에서 mqtt broker 서버를 만들기 위해 필요한 라이브러리가 있다.
+
+github.com/eclipse/paho.mqtt.golang 라는 라이브러리 이다.
+
+위 라이브러리를 사용하기 위해선 터미널에서 go get 명령으로 다운받을 수 있다.
+```
+go get github.com/eclipse/paho.mqtt.golang 
+```
+go.mod 에 라이브러리가 입력되면 go.sum에 필요한 것들이 전부 다운받아진다. (go get없이도 mod차원에서 자동으로 될 수 있으나 명령으로 치는게 깔끔해 보인다.)
+
 ### 1. main.go
 golang 폴더에선 기본적으로 하나의 main 함수만 취급한다. 
 
