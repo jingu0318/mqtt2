@@ -1,11 +1,11 @@
-package main
+// package main
 
-import (
-	"sensor_server/gos"
-)
+// import (
+// 	"sensor_server/gos"
+// )
 
-func main() {
-	dp := gos.DBProc{}
-	gos.NewDBProc(dp)
-	gos.NewMqttClient(dp)
-}
+// func main() {
+// 	dp := gos.DBProc{}
+// 	gos.NewDBProc(dp)
+// 	gos.NewMqttClient(dp)
+// }

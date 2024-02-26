@@ -32,13 +32,12 @@ func NewMqttClient(dp DBProc) {
 	mq.isConnected = false
 
 	mq.readConf()
-	mq.init()
 
 	mq.MsgHandler = func(client mqtt.Client, msg mqtt.Message) {
 		str := string(msg.Payload())
-		name := str[0:5]
-		value := str[6:]
-		fmt.Print(name + ":" + value)
+		name := str[0:4]
+		value := str[5:]
+		fmt.Println(name + ":" + value)
 		_, err := dp.DBConn.Exec("INSERT INTO sensorlogs(name, temp) value(?,?)", name, value)
 		if err == nil {
 		} else {
@@ -52,6 +51,8 @@ func NewMqttClient(dp DBProc) {
 	mq.ProcLostConnect = func(client mqtt.Client, err error) {
 		fmt.Printf("Connect lost: %v", err)
 	}
+
+	mq.init()
 	mq.sub()
 }
 
@@ -59,7 +60,7 @@ func (mq *MqttClient) readConf() { //json 파일 읽기
 	file, _ := os.Open("./mqtt.json")
 	defer file.Close()
 	decoder := json.NewDecoder(file)
-	err := decoder.Decode(&mq.MqtInfo) //DB쪽이라 생각하면 될듯
+	err := decoder.Decode(&mq.MqtInfo)
 
 	if err != nil {
 		fmt.Println("err: ", err)

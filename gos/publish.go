@@ -60,8 +60,8 @@ func (mq *MqttInfo) pub(client mqtt.Client) {
 
 	num := 71
 	for i := 65; i < num; i++ {
-		text := fmt.Sprintf("%d", i)
-		token := client.Publish(mq.Topic, 0, false, text) //Publish(topic string, qos byte, retained bool, payload interface{})
+		data := fmt.Sprintf("%d", i)
+		token := client.Publish(mq.Topic, 0, false, data) //Publish(topic string, qos byte, retained bool, payload interface{})
 		token.Wait()
 		time.Sleep(5 * time.Second)
 	}

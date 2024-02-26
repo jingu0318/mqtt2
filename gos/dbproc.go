@@ -20,13 +20,13 @@ type DBInfo struct { //ADBInfo구조체 선언
 }
 
 type DBProc struct { //ADBProc 구조체 선언
-	DBInfo DBInfo  //구조체 안 구조체 (Nested struct?)
+	DBInfo DBInfo  //구조체 안 구조체 (Nested struct)
 	DBConn *sql.DB // DB 관련 선언
 }
 
 func NewDBProc(dp DBProc) {
 	dp.readConf()
-	dp.DBConn = GetConnector(dp)
+	dp.DBConn = GetConnector(dp.DBInfo)
 }
 
 func (dp *DBProc) readConf() {
@@ -46,19 +46,19 @@ func (dp *DBProc) readConf() {
 	fmt.Println("DBName : ", dp.DBInfo.DBName)
 }
 
-func GetConnector(dp DBProc) *sql.DB {
+func GetConnector(dbinfo DBInfo) *sql.DB {
 	cfg := mysql.Config{
-		User:   dp.DBInfo.DBUser, // "279"
-		Passwd: dp.DBInfo.DBPW,   // "279developer",
+		User:   dbinfo.DBUser, // "279"
+		Passwd: dbinfo.DBPW,   // "279developer",
 		Net:    "tcp",
 		//Addr:                 "127.0.0.1:3306",
-		Addr:                 dp.DBInfo.DBIP + ":" + strconv.Itoa(dp.DBInfo.DBPort),
+		Addr:                 dbinfo.DBIP + ":" + strconv.Itoa(dbinfo.DBPort),
 		Collation:            "utf8mb4_general_ci",
 		Loc:                  time.UTC,
 		MaxAllowedPacket:     4 << 20.,
 		AllowNativePasswords: true,
 		CheckConnLiveness:    true,
-		DBName:               dp.DBInfo.DBName, // "applesensors",
+		DBName:               dbinfo.DBName, // "applesensors",
 		ParseTime:            true,
 	}
 	connector, err := mysql.NewConnector(&cfg)
